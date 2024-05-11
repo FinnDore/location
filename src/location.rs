@@ -30,16 +30,23 @@ impl Into<crate::pirate_weather::Location> for SavedLocation {
     }
 }
 
+fn get_setting_path() -> String {
+    std::env::var("SETTING_PATH").unwrap_or("location.json".into())
+}
+
 impl SavedLocation {
     #[instrument]
     pub async fn load_location() -> Result<SavedLocation, anyhow::Error> {
-        if tokio::fs::metadata("location.json").await.is_err() {
+        if tokio::fs::metadata(get_setting_path()).await.is_err() {
             info!("location file not found defaulting to London");
 
             let location = SavedLocation::default();
 
-            if let Err(err) =
-                tokio::fs::write("location.json", serde_json::to_string(&location).unwrap()).await
+            if let Err(err) = tokio::fs::write(
+                get_setting_path(),
+                serde_json::to_string(&location).unwrap(),
+            )
+            .await
             {
                 error!(%err, "Failed to write default location file");
             }
@@ -47,7 +54,7 @@ impl SavedLocation {
             return Ok(location);
         }
 
-        let location = tokio::fs::read_to_string("location.json").await;
+        let location = tokio::fs::read_to_string(get_setting_path()).await;
         if let Err(err) = location {
             error!(%err,"Failed to read location file");
             return Err(err.into());
@@ -73,7 +80,7 @@ impl SavedLocation {
     #[instrument]
     pub async fn save_location(location: &SavedLocation) -> Result<(), anyhow::Error> {
         let location = serde_json::to_string(location).unwrap();
-        tokio::fs::write("location.json", location).await?;
+        tokio::fs::write(get_setting_path(), location).await?;
         Ok(())
     }
 }
