@@ -31,7 +31,7 @@ impl Into<crate::pirate_weather::Location> for SavedLocation {
 }
 
 fn get_setting_path() -> String {
-    std::env::var("SETTING_PATH").unwrap_or("location.json".into())
+    std::env::var("SETTINGS_PATH").unwrap_or("location.json".into())
 }
 
 impl SavedLocation {
