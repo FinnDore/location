@@ -58,9 +58,7 @@ impl SavedLocation {
             error!(%err, "Failed to parse location file writing default" );
             let location = SavedLocation::default();
 
-            if let Err(err) =
-                tokio::fs::write("location.json", serde_json::to_string(&location).unwrap()).await
-            {
+            if let Err(err) = SavedLocation::save_location(&location).await {
                 error!(%err, "Failed to write default location file");
             }
 
@@ -70,6 +68,13 @@ impl SavedLocation {
         let parsed_location = location.unwrap();
         info!(?parsed_location, "Loaded location from file");
         Ok(parsed_location)
+    }
+
+    #[instrument]
+    pub async fn save_location(location: &SavedLocation) -> Result<(), anyhow::Error> {
+        let location = serde_json::to_string(location).unwrap();
+        tokio::fs::write("location.json", location).await?;
+        Ok(())
     }
 }
 
@@ -94,6 +99,11 @@ pub async fn set_location(
         );
         warn!("unable to set location without valid auth token");
         return status::StatusCode::UNAUTHORIZED;
+    }
+
+    if let Err(err) = SavedLocation::save_location(&body).await {
+        error!(%err, "Failed to save location");
+        return status::StatusCode::INTERNAL_SERVER_ERROR;
     }
 
     info!("setting the location");
