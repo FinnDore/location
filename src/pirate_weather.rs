@@ -90,6 +90,8 @@ pub async fn get_location(State(state): State<SharedState>) -> Result<Json<Weath
     Ok(Json(
         state
             .location
+            .read()
+            .await
             .get_weather(&state.priate_weather_token)
             .await?,
     ))

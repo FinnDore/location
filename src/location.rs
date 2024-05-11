@@ -1,6 +1,12 @@
+use axum::extract::State;
+use axum::http::{status, HeaderMap};
+use axum::response::IntoResponse;
+use axum::Json;
 use serde_json::Error;
-use tracing::info;
 use tracing::{error, instrument};
+use tracing::{info, warn};
+
+use crate::SharedState;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,6 +21,12 @@ impl Default for SavedLocation {
             name: "London".into(),
             lat_lgn: (51.510803, -0.120703),
         }
+    }
+}
+
+impl Into<crate::pirate_weather::Location> for SavedLocation {
+    fn into(self) -> crate::pirate_weather::Location {
+        crate::pirate_weather::Location::new(self.name, self.lat_lgn)
     }
 }
 
@@ -59,4 +71,32 @@ impl SavedLocation {
         info!(?parsed_location, "Loaded location from file");
         Ok(parsed_location)
     }
+}
+
+#[instrument(skip(state, headers))]
+pub async fn set_location(
+    headers: HeaderMap,
+    State(state): State<SharedState>,
+    Json(body): Json<SavedLocation>,
+) -> impl IntoResponse {
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|header| header.to_str().ok());
+
+    if auth_header.is_none() || state.admin_auth_token != auth_header.unwrap() {
+        info!(
+            "Failed to connect auth header is {}",
+            if auth_header.is_none() {
+                "missing"
+            } else {
+                "invalid"
+            }
+        );
+        warn!("unable to set location without valid auth token");
+        return status::StatusCode::UNAUTHORIZED;
+    }
+
+    info!("setting the location");
+    *state.location.write().await = body.into();
+    return status::StatusCode::OK;
 }

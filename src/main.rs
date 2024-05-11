@@ -2,7 +2,7 @@ mod location;
 mod pirate_weather;
 
 use axum::http::HeaderValue;
-use axum::routing::get;
+use axum::routing::{get, post};
 use location::SavedLocation;
 use pirate_weather::Location;
 use std::sync::Arc;
@@ -15,12 +15,13 @@ use axum::Router;
 use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::{fmt, prelude::*, Registry};
 
+use crate::location::set_location;
 use crate::pirate_weather::get_location;
 
 pub struct TheState {
     pub admin_auth_token: String,
     pub priate_weather_token: String,
-    pub location: Arc<Location>,
+    pub location: Arc<RwLock<Location>>,
     pub contributions_last_cache_time_ms: Arc<RwLock<i64>>,
 }
 
@@ -33,7 +34,10 @@ impl TheState {
         Self {
             priate_weather_token,
             admin_auth_token,
-            location: Location::new(saved_location.name, saved_location.lat_lgn).into(),
+            location: Arc::new(RwLock::new(Location::new(
+                saved_location.name,
+                saved_location.lat_lgn,
+            ))),
             contributions_last_cache_time_ms: Arc::new(0.into()),
         }
     }
@@ -98,6 +102,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/location", get(get_location))
+        .route("/location", post(set_location))
         .layer(
             CorsLayer::new()
                 .allow_origin("https://finndore.dev".parse::<HeaderValue>().unwrap())
