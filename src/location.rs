@@ -42,12 +42,7 @@ impl SavedLocation {
 
             let location = SavedLocation::default();
 
-            if let Err(err) = tokio::fs::write(
-                get_setting_path(),
-                serde_json::to_string(&location).unwrap(),
-            )
-            .await
-            {
+            if let Err(err) = SavedLocation::save_location(&location).await {
                 error!(%err, "Failed to write default location file");
             }
 
