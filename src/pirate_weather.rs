@@ -85,16 +85,36 @@ impl Location {
 }
 
 #[instrument(skip(state))]
-pub async fn get_location(State(state): State<SharedState>) -> Result<Json<Weather>, String> {
+pub async fn get_location(
+    State(state): State<SharedState>,
+) -> Result<Json<LocationResponse>, String> {
     info!("fetching weather");
-    Ok(Json(
-        state
-            .location
-            .read()
-            .await
-            .get_weather(&state.priate_weather_token)
-            .await?,
-    ))
+    let current_location = state.location.read().await;
+    let weather = current_location
+        .get_weather(&state.priate_weather_token)
+        .await?;
+
+    Ok(Json(LocationResponse {
+        location: current_location.name.clone(),
+        latitude: current_location.lat_lgn.0,
+        longitude: current_location.lat_lgn.1,
+        timezone: weather.timezone,
+        offset: weather.offset,
+        elevation: weather.elevation,
+        currently: weather.currently,
+    }))
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocationResponse {
+    pub location: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub timezone: String,
+    pub offset: f64,
+    pub elevation: i64,
+    pub currently: Currently,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
