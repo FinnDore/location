@@ -103,12 +103,11 @@ async fn main() {
     let app = Router::new()
         .route("/location", get(get_location))
         .route("/location", post(set_location))
-        .layer(
-            CorsLayer::new()
-                .allow_origin("https://finndore.dev".parse::<HeaderValue>().unwrap())
-                .allow_origin("https://*finnnn.vercel.app".parse::<HeaderValue>().unwrap())
-                .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap()),
-        )
+        .layer(CorsLayer::new().allow_origin([
+            "https://finndore.dev".parse().unwrap(),
+            "https://*finnnn.vercel.app".parse().unwrap(),
+            "http://localhost:3000".parse().unwrap(),
+        ]))
         .with_state(state);
 
     let port = std::env::var("PORT").unwrap_or("3002".to_string());
