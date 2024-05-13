@@ -106,6 +106,7 @@ async fn main() {
         .layer(
             CorsLayer::new()
                 .allow_origin("https://finndore.dev".parse::<HeaderValue>().unwrap())
+                .allow_origin("https://*finnnn.vercel.app".parse::<HeaderValue>().unwrap())
                 .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap()),
         )
         .with_state(state);
