@@ -1,13 +1,14 @@
 mod location;
 mod pirate_weather;
 
+use axum::http::request::Parts;
 use axum::http::HeaderValue;
 use axum::routing::{get, post};
 use location::SavedLocation;
 use pirate_weather::Location;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::instrument;
 use tracing::{info, level_filters::LevelFilter};
 
@@ -103,11 +104,20 @@ async fn main() {
     let app = Router::new()
         .route("/location", get(get_location))
         .route("/location", post(set_location))
-        .layer(CorsLayer::new().allow_origin([
-            "https://finndore.dev".parse().unwrap(),
-            "https://*finnnn.vercel.app".parse().unwrap(),
-            "http://localhost:3000".parse().unwrap(),
-        ]))
+        .layer(CorsLayer::new().allow_origin(AllowOrigin::predicate(
+            |origin: &HeaderValue, _request_parts: &Parts| {
+                if let Ok(host) = origin.to_str() {
+                    [
+                        "https://finndore.dev",
+                        "finnnn.vercel.app",
+                        "http://localhost:3000",
+                    ]
+                    .into_iter()
+                    .any(|allowed_origin| host.ends_with(allowed_origin));
+                }
+                false
+            },
+        )))
         .with_state(state);
 
     let port = std::env::var("PORT").unwrap_or("3002".to_string());
