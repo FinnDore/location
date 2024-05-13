@@ -9,8 +9,8 @@ use pirate_weather::Location;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use tracing::instrument;
 use tracing::{info, level_filters::LevelFilter};
+use tracing::{instrument, warn};
 
 use axum::Router;
 use tracing_subscriber::filter::EnvFilter;
@@ -107,19 +107,6 @@ async fn main() {
         .layer(CorsLayer::new().allow_origin(AllowOrigin::predicate(
             |origin: &HeaderValue, _request_parts: &Parts| {
                 if let Ok(host) = origin.to_str() {
-                    info!(
-                        host,
-                        ?origin,
-                        val = [
-                            "https://finndore.dev",
-                            "finnnn.vercel.app",
-                            "http://localhost:3000",
-                        ]
-                        .into_iter()
-                        .any(|allowed_origin| host.ends_with(allowed_origin)),
-                        "Origin"
-                    );
-
                     return [
                         "https://finndore.dev",
                         "finnnn.vercel.app",
@@ -128,6 +115,7 @@ async fn main() {
                     .into_iter()
                     .any(|allowed_origin| host.ends_with(allowed_origin));
                 }
+                warn!(?origin, "Cors layer failed to parse origin header");
                 false
             },
         )))
