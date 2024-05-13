@@ -107,7 +107,20 @@ async fn main() {
         .layer(CorsLayer::new().allow_origin(AllowOrigin::predicate(
             |origin: &HeaderValue, _request_parts: &Parts| {
                 if let Ok(host) = origin.to_str() {
-                    [
+                    info!(
+                        host,
+                        ?origin,
+                        val = [
+                            "https://finndore.dev",
+                            "finnnn.vercel.app",
+                            "http://localhost:3000",
+                        ]
+                        .into_iter()
+                        .any(|allowed_origin| host.ends_with(allowed_origin)),
+                        "Origin"
+                    );
+
+                    return [
                         "https://finndore.dev",
                         "finnnn.vercel.app",
                         "http://localhost:3000",
