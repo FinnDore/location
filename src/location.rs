@@ -19,7 +19,7 @@ impl Default for SavedLocation {
     fn default() -> Self {
         Self {
             name: "London".into(),
-            lat_lgn: (51.5076, -0.0842),
+            lat_lgn: (51.4776, -0.0860),
         }
     }
 }
